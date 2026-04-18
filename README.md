@@ -1,13 +1,22 @@
-# Sample Hardhat Project
+# DAO Governance Contract
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a script that deploys that contract.
+A smart contract-based DAO system that allows users to create proposals and manage treasury funds.
 
-Try running some of the following tasks:
+## Features
 
-```shell
-npx hardhat help
+- Proposal creation with treasury validation
+- Event emission for tracking proposals
+- Full test coverage using Hardhat
+
+## Tech Stack
+
+- Solidity
+- Hardhat
+- Ethers.js
+
+## Getting Started
+
+```bash
+npm install
 npx hardhat test
-GAS_REPORT=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.js
 ```
