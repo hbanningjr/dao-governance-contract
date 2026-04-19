@@ -81,49 +81,158 @@ describe("Token", () => {
     });
   });
 
-  describe("Proposal creation", () => {
-    let result;
+  let result;
+
+  describe("Success", () => {
+    beforeEach(async () => {
+      transaction = await dao
+        .connect(investor1)
+        .createProposal("Proposal 1", ether(1), recipient.address);
+      result = await transaction.wait();
+    });
+
+    it("updates proposal count", async () => {
+      expect(await dao.proposalCount()).to.equal(1);
+    });
+
+    it("updates proposal mapping", async () => {
+      const proposal = await dao.proposals(1);
+      console.log(proposal);
+      expect(proposal.id).to.equal(1);
+      expect(proposal.amount).to.equal(ether(1));
+      expect(proposal.recipient).to.equal(recipient.address);
+    });
+    it("emits a Propose event", async () => {
+      await expect(transaction)
+        .to.emit(dao, "Propose")
+        .withArgs(1, ether(1), recipient.address, investor1.address);
+    });
+  });
+
+  describe("Failure", () => {
+    it("rejects invalid amount", async () => {
+      await expect(
+        dao
+          .connect(investor1)
+          .createProposal("Proposal 1", ether(1000), recipient.address),
+      ).to.be.reverted;
+    });
+    it("rejects non-investor", async () => {
+      await expect(
+        dao
+          .connect(user)
+          .createProposal("Proposal 1", ether(1), recipient.address),
+      ).to.be.reverted;
+    });
+  });
+  describe("Voting", () => {
+    let transaction, result;
+
+    beforeEach(async () => {
+      transaction = await dao
+        .connect(investor1)
+        .createProposal("Proposal 1", ether(1), recipient.address);
+      await transaction.wait();
+    });
+
+    describe("Success", () => {
+      beforeEach(async () => {
+        transaction = await dao.connect(investor1).vote(1);
+        result = await transaction.wait();
+      });
+
+      it("emits a Vote event", async () => {
+        const balance = await token.balanceOf(investor1.address);
+
+        await expect(transaction)
+          .to.emit(dao, "Vote")
+          .withArgs(1, balance, investor1.address);
+      });
+
+      it("updates vote count", async () => {
+        const proposal = await dao.proposals(1);
+        const balance = await token.balanceOf(investor1.address);
+        expect(proposal.votes).to.equal(balance);
+      });
+    });
+
+    describe("Failure", () => {
+      it("rejects non-investor", async () => {
+        await expect(dao.connect(funder).vote(1)).to.be.reverted;
+      });
+
+      it("rejects double voting", async () => {
+        transaction = await dao.connect(investor1).vote(1);
+        await transaction.wait();
+
+        await expect(dao.connect(investor1).vote(1)).to.be.reverted;
+      });
+    });
+  });
+
+  describe("Governance", () => {
+    let transaction, result;
 
     describe("Success", () => {
       beforeEach(async () => {
         transaction = await dao
           .connect(investor1)
           .createProposal("Proposal 1", ether(1), recipient.address);
+        await transaction.wait();
+
+        transaction = await dao.connect(investor1).vote(1);
+        await transaction.wait();
+
+        transaction = await dao.connect(investor2).vote(1);
+        await transaction.wait();
+
+        transaction = await dao.connect(investor3).vote(1);
+        await transaction.wait();
+
+        transaction = await dao.finalizeProposal(1);
         result = await transaction.wait();
       });
 
-      it("updates proposal count", async () => {
-        expect(await dao.proposalCount()).to.equal(1);
+      it("updates the proposal to finalized", async () => {
+        const proposal = await dao.proposals(1);
+        expect(proposal.executed).to.equal(true);
       });
 
-      it("updates proposal mapping", async () => {
-        const proposal = await dao.proposals(1);
-        console.log(proposal);
-        expect(proposal.id).to.equal(1);
-        expect(proposal.amount).to.equal(ether(1));
-        expect(proposal.recipient).to.equal(recipient.address);
-      });
-      it("emits a Propose event", async () => {
-        await expect(transaction)
-          .to.emit(dao, "Propose")
-          .withArgs(1, ether(1), recipient.address, investor1.address);
+      it("emits a Finalize event", async () => {
+        await expect(transaction).to.emit(dao, "Finalize").withArgs(1);
       });
     });
 
     describe("Failure", () => {
-      it("rejects invalid amount", async () => {
-        await expect(
-          dao
-            .connect(investor1)
-            .createProposal("Proposal 1", ether(1000), recipient.address),
-        ).to.be.reverted;
+      beforeEach(async () => {
+        transaction = await dao
+          .connect(investor1)
+          .createProposal("Proposal 1", ether(1), recipient.address);
+        await transaction.wait();
       });
-      it("rejects non-investor", async () => {
-        await expect(
-          dao
-            .connect(investor1)
-            .createProposal("Proposal 1", ether(100), recipient.address),
-        ).to.be.reverted;
+
+      it("rejects finalization if not enough votes", async () => {
+        await expect(dao.finalizeProposal(1)).to.be.reverted;
+      });
+
+      it("rejects finalization if not investor", async () => {
+        await expect(dao.connect(user).finalizeProposal(1)).to.be.reverted;
+      });
+
+      it("rejects proposal if already finalized", async () => {
+        transaction = await dao.connect(investor1).vote(1);
+        await transaction.wait();
+
+        transaction = await dao.connect(investor2).vote(1);
+        await transaction.wait();
+
+        transaction = await dao.connect(investor3).vote(1);
+        await transaction.wait();
+
+        transaction = await dao.finalizeProposal(1);
+        await transaction.wait();
+
+        await expect(dao.finalizeProposal(1)).to.be.reverted;
       });
     });
   });
