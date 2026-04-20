@@ -35,7 +35,6 @@ describe("Token", () => {
     token = await Token.deploy("Dapp University", "DAPP", tokens(1000000));
 
     //Send tokens to investors - each gets 20%
-    // Send tokens to investors - each gets 20%
 
     let transaction;
 

@@ -5,18 +5,27 @@
 // will compile your contracts, add the Hardhat Runtime Environment's members to the
 // global scope, and execute the script.
 const hre = require("hardhat");
+const tokens = (n) => {
+  return hre.ethers.utils.parseUnits(n.toString(), "ether");
+};
 
 async function main() {
-  const NAME = 'Dapp University'
-  const SYMBOL = 'DAPP'
-  const MAX_SUPPLY = '1000000'
+  const NAME = "Dapp University";
+  const SYMBOL = "DAPPU";
+  const MAX_SUPPLY = tokens(1000000);
 
   // Deploy Token
-  const Token = await hre.ethers.getContractFactory('Token')
-  let token = await Token.deploy(NAME, SYMBOL, MAX_SUPPLY)
+  const Token = await hre.ethers.getContractFactory("Token");
+  let token = await Token.deploy(NAME, SYMBOL, MAX_SUPPLY);
 
-  await token.deployed()
-  console.log(`Token deployed to: ${token.address}\n`)
+  await token.deployed();
+  console.log(`Token deployed to: ${token.address}\n`);
+
+  // Deploy DAO
+  const DAO = await hre.ethers.getContractFactory("DAO");
+  const dao = await DAO.deploy(token.address, tokens(500001));
+
+  console.log(`DAO deployed to: ${dao.address}\n`);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
