@@ -65,19 +65,13 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "proposalId",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "votes",
+        "name": "id",
         "type": "uint256"
       },
       {
         "indexed": false,
         "internalType": "address",
-        "name": "voter",
+        "name": "investor",
         "type": "address"
       }
     ],
@@ -167,11 +161,6 @@
         "internalType": "uint256",
         "name": "votes",
         "type": "uint256"
-      },
-      {
-        "internalType": "bool",
-        "name": "executed",
-        "type": "bool"
       },
       {
         "internalType": "bool",

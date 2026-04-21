@@ -78,9 +78,6 @@ async function main() {
   transaction = await dao.connect(investor1).createProposal(`Proposal4`, ether(100), recipient.address);
   await transaction.wait();
 
-  transaction = await dao.connect(investor1).vote(4);
-  await transaction.wait();
-
   transaction = await dao.connect(investor2).vote(4);
   await transaction.wait();
 
